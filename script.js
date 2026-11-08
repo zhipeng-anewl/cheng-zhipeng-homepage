@@ -11,7 +11,7 @@ const PROFILE = {
   email: "2362952677@qq.com",
   wechat: "15179367585",
   greeting:
-    "你好，我是程志鹏的数字分身。\n可以问我：最近在做什么、有哪些作品方向，或者怎么联系我。",
+    "你好，我是程志鹏的数字分身。\n可以问我：最近在做什么、关注什么方向，或者怎么联系我。",
 };
 
 const INTENTS = [
@@ -24,7 +24,7 @@ const INTENTS = [
       /你会(不会)?(思考|学习|聊天)/,
     ],
     reply:
-      "我是程志鹏的数字分身，基于这个页面上的公开信息回答问题。\n\n当前是本地规则版：不联网、不保存对话，也不会编造没有提供的经历。遇到资料之外的问题，我会直接说不知道。",
+      "我是程志鹏的数字分身，基于这个页面上的公开信息回答问题。\n\n遇到资料之外的问题，我会直接说不确定，不会编造没有提供的经历。",
   },
   {
     id: "contact",
@@ -52,7 +52,7 @@ const INTENTS = [
       /作品集/,
     ],
     reply:
-      "目前还没有公开作品。\n\n我的作品集还在积累，先把三个正在探索的方向放在这里：\n\n· AI 应用观察——看 AI 产品怎么被真正用起来\n· 内容表达方法——把复杂信息讲清楚、讲好听\n· 写作与旅行——用文字整理观察和现场\n\n等有具体案例，我会补到这页上。如果你有明确的合作场景，也可以直接问怎么联系我。",
+      "目前还没有公开作品或项目案例。\n\n如果你有具体的合作场景，或者想了解我正在做什么，欢迎通过邮箱或微信进一步聊。",
   },
   {
     id: "now",
@@ -66,7 +66,7 @@ const INTENTS = [
       /最近怎么样/,
     ],
     reply:
-      "最近主要在做两件事：\n\n1. 搭自己的个人主页，把信息和方向放得更清楚；\n2. 梳理作品方向和接下来想长期写的方向。\n\n简单说：先把想做的事讲清楚，再用 AI 试试能不能做得更好。",
+      "我最近主要在学三件事：AI 应用开发、Python 后端开发，还有前端 Vue 3。\n\n也在试着把学到的东西做成更完整的小项目。",
   },
   {
     id: "intro",
@@ -81,7 +81,7 @@ const INTENTS = [
       /^介绍一下$/,
     ],
     reply:
-      "我是程志鹏，一名内容策划。\n\n我关注内容表达、AI 应用和知识整理，喜欢把复杂的问题拆开，再用普通人听得懂的方式讲出来。最近在搭个人主页、梳理作品方向，也在学习怎么用 AI 做产品。",
+      "我是程志鹏。\n\n最近在学 AI 应用开发、Python 后端开发和前端 Vue 3，长期关注大模型训练与微调、多模态表示学习和知识图谱。喜欢把复杂的问题讲明白，也在慢慢积累自己的项目。",
   },
   {
     id: "strengths",
@@ -95,7 +95,7 @@ const INTENTS = [
       /厉害/,
     ],
     reply:
-      "如果要说我最擅长的，大概是这三件事：\n\n· 内容表达：把复杂信息拆成清楚、可读的结构\n· AI 应用：关注工具怎么真正进入日常工作和产品\n· 知识整理：把零散的信息收拢成能用的体系\n\n这些事有一个共同点：都在帮人更快地理解一件事。",
+      "我长期关注大模型训练与微调、多模态表示学习、知识图谱这几个方向，也在学 AI 应用开发、Python 后端和 Vue 3。\n\n还在学习和积累阶段，说不上专家，但愿意把复杂问题讲清楚。",
   },
   {
     id: "cooperation",
@@ -109,13 +109,13 @@ const INTENTS = [
       /求职/,
       /适合.*做/,
     ],
-    reply: `如果你在找内容策划、AI 产品内容、知识整理或内容表达方面的合作，我会很感兴趣。\n\n可以直接说清楚你的场景、目标和时间节奏，发到邮箱 ${PROFILE.email}，或者加微信 ${PROFILE.wechat}。能做的事我会认真聊，做不了的也会直说。`,
+    reply: `如果你有 AI 应用、Python 后端或大模型相关方向的交流或合作机会，欢迎聊聊。\n\n可以直接说清楚你的场景、目标和时间节奏，发到邮箱 ${PROFILE.email}，或者加微信 ${PROFILE.wechat}。能做的事我会认真聊，做不了的也会直说。`,
   },
   {
     id: "interests",
     patterns: [/兴趣/, /爱好/, /喜欢.*什么/, /平时.*喜欢/],
     reply:
-      "AI 应用、写作、旅行。\n\nAI 让我看到新的做法，写作帮我整理观察，旅行则不断提醒我：换个视角，很多问题会不一样。",
+      "我最近大部分精力都在 AI 应用开发、Python 后端和前端 Vue 3 上，也长期关注大模型训练与微调、多模态表示学习、知识图谱。\n\n其他个人爱好我还没写进资料里，不想乱说。",
   },
   {
     id: "homepage",
@@ -128,25 +128,13 @@ const INTENTS = [
       /个人主页/,
     ],
     reply:
-      "做这个主页，一方面是想有个稳定的地方放以后的作品和写作，另一方面也是想试试：一个懂我公开信息的数字分身，能不能替我先回答一些重复的问题。\n\n现在这一版还是轻量的本地规则版，回答范围有限，但结构已经搭好了。",
-  },
-  {
-    id: "writing",
-    patterns: [/写作/, /文章/, /文字/, /表达/],
-    reply:
-      "写作是我整理观察的方式。\n\n我更喜欢把复杂的事写简单：先想清楚结构，再找一个准确的类比，最后用不端着的方式讲出来。最近也在梳理自己长期想写的方向。",
-  },
-  {
-    id: "travel",
-    patterns: [/旅行/, /旅游/, /去过/],
-    reply:
-      "旅行对我来说，是换一个视角看日常。\n\n比起打卡，我更喜欢在路上观察人怎么生活、城市怎么运转，再把这些片段写下来。",
+      "做这个主页，一方面是想有个稳定的地方放以后的作品和项目，另一方面也是想试试：一个懂我公开信息的数字分身，能不能替我先回答一些重复的问题。\n\n现在这一版接了大模型，回答基于页面上的公开资料；网络不通时会退回本地预设回答。",
   },
   {
     id: "ai",
     patterns: [/\bai\b/i, /人工智能/, /大模型/, /智能体/, /提示词/],
     reply:
-      "AI 应用是我最近投入比较多的方向。\n\n我关心的不是模型参数，而是它到底怎么被普通人用起来：哪些环节真的省事了，哪些只是看起来新鲜，以及一个产品怎么把能力翻译成用户能理解的价值。",
+      "AI 是我最近投入比较多的方向。\n\n我在学 AI 应用开发，也长期关注大模型训练与微调、多模态表示学习和知识图谱。目前更关注怎么把学到的东西真正做成能用的项目。",
   },
   {
     id: "thanks",
@@ -187,8 +175,12 @@ const year = document.getElementById("year");
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 let isThinking = false;
-let replyTimer = null;
 let composing = false;
+
+const CHAT_ENDPOINT = "/api/chat";
+const MAX_HISTORY_MESSAGES = 10;
+let conversation = [];
+let activeRequestController = null;
 
 /* ---------- Helpers ---------- */
 
@@ -206,6 +198,36 @@ function getReply(question) {
   }
 
   return FALLBACK_REPLY;
+}
+
+async function requestReply(question, signal) {
+  const response = await fetch(CHAT_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messages: [...conversation, { role: "user", content: question }].slice(
+        -MAX_HISTORY_MESSAGES
+      ),
+    }),
+    signal,
+  });
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch (error) {
+    data = null;
+  }
+
+  if (!response.ok) {
+    throw new Error((data && data.error) || `请求失败（${response.status}）`);
+  }
+
+  if (!data || typeof data.reply !== "string" || !data.reply.trim()) {
+    throw new Error("模型没有返回内容");
+  }
+
+  return data.reply.trim();
 }
 
 function scrollToLatest() {
@@ -294,12 +316,13 @@ function resizeInput() {
 function resetChat() {
   if (!chatLog) return;
 
-  if (replyTimer) {
-    window.clearTimeout(replyTimer);
-    replyTimer = null;
+  if (activeRequestController) {
+    activeRequestController.abort();
+    activeRequestController = null;
   }
 
   setThinking(false);
+  conversation = [];
   chatLog.replaceChildren();
   appendMessage("bot", PROFILE.greeting);
 
@@ -310,7 +333,7 @@ function resetChat() {
   }
 }
 
-function ask(question) {
+async function ask(question) {
   const cleanQuestion = String(question || "").trim().slice(0, 200);
   if (!chatLog || !cleanQuestion || isThinking) return;
 
@@ -326,16 +349,33 @@ function ask(question) {
   chatLog.appendChild(typing);
   scrollToLatest();
 
-  const reply = getReply(cleanQuestion);
-  const delay = 520 + Math.min(700, reply.length * 5);
+  const controller = new AbortController();
+  activeRequestController = controller;
 
-  replyTimer = window.setTimeout(() => {
+  try {
+    const reply = await requestReply(cleanQuestion, controller.signal);
+    conversation.push(
+      { role: "user", content: cleanQuestion },
+      { role: "assistant", content: reply }
+    );
+    conversation = conversation.slice(-MAX_HISTORY_MESSAGES);
+
     typing.remove();
     appendMessage("bot", reply);
+  } catch (error) {
+    // 用户点了「清空」时静默退出，不把旧回答写回已清空的窗口
+    if (error && error.name === "AbortError") return;
+
+    // 详细原因写进控制台，页面上只给访客一句友好的提示
+    console.warn("[数字分身] 调用失败：", error);
+    typing.remove();
+    appendMessage("bot", getReply(cleanQuestion));
+    appendMessage("bot", "（AI 分身暂时不可用，以上是本地预设回答。）");
+  } finally {
+    if (activeRequestController === controller) activeRequestController = null;
     setThinking(false);
-    replyTimer = null;
     if (chatInput && !reduceMotion) chatInput.focus();
-  }, delay);
+  }
 }
 
 /* ---------- Chat events ---------- */

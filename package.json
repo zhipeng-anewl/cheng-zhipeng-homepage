@@ -1,0 +1,10 @@
+{
+  "name": "cheng-zhipeng-homepage",
+  "version": "1.1.0",
+  "private": true,
+  "description": "程志鹏的个人主页：静态页面 + 本地 Node 后端 + DeepSeek 数字分身",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  }
+}
