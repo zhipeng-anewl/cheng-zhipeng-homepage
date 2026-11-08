@@ -1,16 +1,12 @@
-# 运行环境附带的工具，不属于主页源码
+# 本地预览与部署辅助文件，不进入仓库
 tools/
-
-# 打包副本，避免重复存档
-*.zip
-
-# 系统杂项
-Thumbs.db
-.DS_Store
-
-# 本地密钥，绝不提交
 .env
-.env.local
+.chrome-*/
+preview-*.png
+*.zip
+*.log
 
-# 依赖目录（本项目零依赖，预留）
-node_modules/
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
