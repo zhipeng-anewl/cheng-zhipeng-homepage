@@ -5,6 +5,7 @@ tools/
 preview-*.png
 *.zip
 *.log
+dist/
 
 # 系统文件
 .DS_Store
