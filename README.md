@@ -81,6 +81,22 @@
 
 如果 API 不可用（网络问题、Key 未配置等），前端会退回 `script.js` 里的本地预设回答，并在控制台输出具体原因。
 
+## 部署到 EdgeOne Pages
+
+[![使用 EdgeOne Pages 部署](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://console.cloud.tencent.com/edgeone/makers/new?repository-url=https%3A%2F%2Fgithub.com%2Fzhipeng-anewl%2Fcheng-zhipeng-homepage&project-name=cheng-zhipeng-homepage&env=DEEPSEEK_API_KEY)
+
+仓库已包含 `functions/api/chat.js`，EdgeOne Pages 会自动把它识别为 `/api/chat` 函数。
+
+首次部署时：
+
+1. 点击上方按钮，登录腾讯云并授权 EdgeOne 访问 GitHub
+2. 仓库选择 `zhipeng-anewl/cheng-zhipeng-homepage`
+3. 构建配置保持默认；项目根目录为 `./`，构建命令 `npm run build` 会生成 `dist`
+4. 环境变量填入 `DEEPSEEK_API_KEY`（只在 EdgeOne 控制台填写，不要写进仓库）
+5. 完成首次部署后，在「项目概览」或「构建部署」里获取预览链接
+
+如果暂时不配置 `DEEPSEEK_API_KEY`，静态页面仍可正常访问，数字分身会自动退回本地预设回答。
+
 ## 修改指南
 
 1. **页面文案**：直接改 `index.html`
