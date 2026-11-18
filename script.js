@@ -283,7 +283,9 @@ async function requestReply(question, signal) {
   }
 
   if (!response.ok) {
-    throw new Error((data && data.error) || `请求失败（${response.status}）`);
+    const error = new Error((data && data.error) || `请求失败（${response.status}）`);
+    error.status = response.status;
+    throw error;
   }
 
   if (!data || typeof data.reply !== "string" || !data.reply.trim()) {
@@ -397,7 +399,7 @@ function resetChat() {
 }
 
 async function ask(question) {
-  const cleanQuestion = String(question || "").trim().slice(0, 200);
+  const cleanQuestion = String(question || "").trim().slice(0, 500);
   if (!chatLog || !cleanQuestion || isThinking) return;
 
   appendMessage("user", cleanQuestion);
@@ -432,6 +434,13 @@ async function ask(question) {
     // 详细原因写进控制台，页面上只给访客一句友好的提示
     console.warn("[数字分身] 调用失败：", error);
     typing.remove();
+
+    // 输入被拦截、超长或触发限流时，直接显示服务端给出的提示。
+    if (error && [400, 413, 429].includes(error.status)) {
+      appendMessage("bot", error.message);
+      return;
+    }
+
     appendMessage("bot", getReply(cleanQuestion));
     appendMessage("bot", "（AI 分身暂时不可用，以上是本地预设回答。）");
   } finally {

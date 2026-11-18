@@ -5,6 +5,7 @@ tools/
 preview-*.png
 *.zip
 *.log
+logs/
 dist/
 
 # 系统文件

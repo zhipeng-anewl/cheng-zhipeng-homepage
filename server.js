@@ -9,6 +9,8 @@
  *
  * API Key 只从服务端环境变量读取，永远不会发送到浏览器。
  *
+ * 安全：输入长度/提示注入过滤、输出 PII 脱敏、审计日志、每 IP 每分钟 10 次限流。
+ *
  * 启动：node server.js        （或 npm start）
  * 端口：默认 8787，可用 .env 里的 PORT 修改
  */
@@ -17,7 +19,8 @@ const http = require("node:http");
 const fs = require("node:fs");
 const fsp = require("node:fs/promises");
 const path = require("node:path");
-const { SYSTEM_PROMPT } = require("./knowledge");
+const crypto = require("node:crypto");
+const { SYSTEM_PROMPT, PROFILE } = require("./knowledge");
 
 const ROOT = __dirname;
 
@@ -42,10 +45,56 @@ const MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
 
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_HISTORY_MESSAGES = 10;
-const MAX_MESSAGE_CHARS = 1000;
+const MAX_MESSAGE_CHARS = 500;
+const MAX_ASSISTANT_CHARS = 1000;
 const REQUEST_TIMEOUT_MS = 45_000;
 const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX = 20;
+const RATE_LIMIT_MAX = 10;
+
+const PUBLIC_EMAIL = PROFILE.email;
+const PUBLIC_PHONE = PROFILE.phone || PROFILE.wechat;
+const SAFE_REPLY = "这个话题我不方便展开。我们可以回到我的项目、技术栈或求职相关的问题。";
+
+// 明显的提示注入和有害内容只做基础拦截；生产环境建议再接入内容安全服务。
+const INJECTION_PATTERNS = [
+  /ignore\s+(all\s+)?(previous|above)\s+(instructions?|prompts?)/i,
+  /忽略(之前|以上|前面).*(指令|规则|提示)/,
+  /(system|developer)\s*(prompt|message)/i,
+  /(系统|开发者).*(提示词|指令|消息)/,
+  /(reveal|print|show|repeat).*(prompt|instructions?|system)/i,
+  /(泄露|输出|打印|重复).*(提示词|系统指令|密钥|api\s*key)/i,
+  /jailbreak|dan\s*mode/i,
+  /<\|.*?\|>/,
+  /^\s*(system|assistant|developer)\s*:/im,
+  /(读取|输出|泄露).*(\.env|环境变量|数据库|内部数据|系统提示)/i,
+];
+
+const UNSAFE_CONTENT_PATTERNS = [
+  /(如何|怎么).*(制作|制造).*(炸弹|爆炸物)/,
+  /(自杀|轻生).*(方法|方式|教程)/,
+  /儿童.*(色情|性行为)/,
+  /(制毒|贩毒|吸毒).*(方法|教程)/,
+  /盗取.*(银行卡|账号|密码).*(方法|教程)/,
+  /入侵.*(网站|服务器).*(教程|方法)/,
+];
+
+const PROMPT_LEAK_PATTERNS = [
+  /系统提示词/i,
+  /SYSTEM_PROMPT/,
+  /DEEPSEEK_API_KEY/,
+  /DEEPSEEK_BASE_URL/,
+  /Authorization\s*:\s*Bearer/i,
+  /Bearer\s+[A-Za-z0-9._-]{16,}/,
+  /\.env\b/,
+  /sk-[A-Za-z0-9]{20,}/,
+  /api[_-]?key/i,
+];
+
+const EMAIL_PATTERN = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+const PHONE_PATTERN = /(^|[^\d])(1[3-9]\d{9})(?!\d)/g;
+const ID_CARD_PATTERN = /(^|[^\d])(\d{17}[\dXx])(?!\d)/g;
+const BANK_CARD_PATTERN = /(^|[^\d])(\d{16,19})(?!\d)/g;
+const API_KEY_PATTERN = /(sk-[A-Za-z0-9]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})/g;
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -64,15 +113,17 @@ const MIME_TYPES = {
 
 // 只属于服务端的文件，禁止被浏览器直接访问
 const SERVER_ONLY_FILES = new Set(["server.js", "knowledge.js", "package.json", "package-lock.json"]);
+const SERVER_ONLY_DIRS = new Set(["functions", "scripts", "logs", "tools"]);
 
 /* ---------- 工具函数 ---------- */
 
-function sendJson(res, statusCode, payload) {
+function sendJson(res, statusCode, payload, extraHeaders = {}) {
   const body = JSON.stringify(payload);
   res.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
     "Content-Length": Buffer.byteLength(body),
     "Cache-Control": "no-store",
+    ...extraHeaders,
   });
   res.end(body);
 }
@@ -109,23 +160,118 @@ function readJsonBody(req) {
   });
 }
 
-/* ---------- 简易限流（内存版，够个人主页用） ---------- */
+/* ---------- 安全工具：限流、脱敏、内容过滤、审计日志 ---------- */
 
 const rateLimitHits = new Map();
 
-function isRateLimited(ip) {
+function checkRateLimit(ip) {
   const now = Date.now();
-  const hit = rateLimitHits.get(ip);
+  let hit = rateLimitHits.get(ip);
 
   if (!hit || now > hit.resetAt) {
-    rateLimitHits.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return false;
+    hit = { count: 0, resetAt: now + RATE_LIMIT_WINDOW_MS };
+    rateLimitHits.set(ip, hit);
   }
 
-  if (hit.count >= RATE_LIMIT_MAX) return true;
-
   hit.count += 1;
-  return false;
+  return {
+    limited: hit.count > RATE_LIMIT_MAX,
+    remaining: Math.max(0, RATE_LIMIT_MAX - hit.count),
+    resetAt: hit.resetAt,
+    retryAfter: Math.max(1, Math.ceil((hit.resetAt - now) / 1000)),
+  };
+}
+
+function rateLimitHeaders(rate) {
+  return {
+    "Retry-After": String(rate.retryAfter),
+    "X-RateLimit-Limit": String(RATE_LIMIT_MAX),
+    "X-RateLimit-Remaining": String(rate.remaining),
+    "X-RateLimit-Reset": String(Math.ceil(rate.resetAt / 1000)),
+  };
+}
+
+function hashClient(value) {
+  return crypto.createHash("sha256").update(String(value)).digest("hex").slice(0, 12);
+}
+
+function redactPII(value) {
+  let text = String(value || "");
+  text = text.split(PUBLIC_EMAIL).join("__PUBLIC_EMAIL__");
+  text = text.split(PUBLIC_PHONE).join("__PUBLIC_PHONE__");
+
+  text = text
+    .replace(API_KEY_PATTERN, "[密钥已脱敏]")
+    .replace(ID_CARD_PATTERN, (match, prefix) => `${prefix}[身份证号已脱敏]`)
+    .replace(PHONE_PATTERN, (match, prefix) => `${prefix}[手机号已脱敏]`)
+    .replace(EMAIL_PATTERN, "[邮箱已脱敏]")
+    .replace(BANK_CARD_PATTERN, (match, prefix) => `${prefix}[银行卡号已脱敏]`);
+
+  return text
+    .split("__PUBLIC_EMAIL__")
+    .join(PUBLIC_EMAIL)
+    .split("__PUBLIC_PHONE__")
+    .join(PUBLIC_PHONE);
+}
+
+function safeLogText(value, maxLength = 600) {
+  return redactPII(value).slice(0, maxLength);
+}
+
+function auditLog(entry) {
+  const line = JSON.stringify({
+    event: "ai_chat",
+    timestamp: new Date().toISOString(),
+    ...entry,
+  });
+
+  console.log("[ai-audit]", line);
+
+  // 本地服务额外写一份脱敏日志；EdgeOne 版本使用平台日志。
+  try {
+    const logDir = path.join(ROOT, "logs");
+    fs.mkdirSync(logDir, { recursive: true });
+    fs.appendFileSync(path.join(logDir, "ai-audit.log"), `${line}\n`, "utf8");
+  } catch (error) {
+    // 日志写入失败不应影响聊天请求
+  }
+}
+
+function normalizeInput(value) {
+  return String(value || "")
+    .replace(/\u0000/g, "")
+    .replace(/\r\n/g, "\n")
+    .trim();
+}
+
+function inspectInput(text) {
+  if (text.length > MAX_MESSAGE_CHARS) {
+    return { ok: false, reason: "TOO_LONG", text };
+  }
+
+  if (INJECTION_PATTERNS.some((pattern) => pattern.test(text))) {
+    return { ok: false, reason: "PROMPT_INJECTION", text };
+  }
+
+  if (UNSAFE_CONTENT_PATTERNS.some((pattern) => pattern.test(text))) {
+    return { ok: false, reason: "UNSAFE_CONTENT", text };
+  }
+
+  return { ok: true, reason: null, text };
+}
+
+function filterOutput(value) {
+  const original = String(value || "").trim();
+  const redacted = redactPII(original);
+  const blocked =
+    PROMPT_LEAK_PATTERNS.some((pattern) => pattern.test(redacted)) ||
+    UNSAFE_CONTENT_PATTERNS.some((pattern) => pattern.test(redacted));
+
+  return {
+    text: blocked ? SAFE_REPLY : redacted,
+    redacted: redacted !== original,
+    blocked,
+  };
 }
 
 // 定期清理过期记录，避免内存无限增长
@@ -139,25 +285,65 @@ setInterval(() => {
 /* ---------- 聊天接口 ---------- */
 
 function normalizeHistory(messages) {
-  if (!Array.isArray(messages)) return [];
+  if (!Array.isArray(messages)) {
+    return { history: [], blocked: { reason: "INVALID_HISTORY", text: "" } };
+  }
 
-  return messages
-    .filter(
-      (message) =>
-        message &&
-        (message.role === "user" || message.role === "assistant") &&
-        typeof message.content === "string"
-    )
-    .slice(-MAX_HISTORY_MESSAGES)
-    .map((message) => ({
-      role: message.role,
-      content: message.content.trim().slice(0, MAX_MESSAGE_CHARS),
-    }))
-    .filter((message) => message.content.length > 0);
+  const history = [];
+
+  for (const message of messages.slice(-MAX_HISTORY_MESSAGES)) {
+    if (
+      !message ||
+      (message.role !== "user" && message.role !== "assistant") ||
+      typeof message.content !== "string"
+    ) {
+      continue;
+    }
+
+    const content = normalizeInput(message.content);
+    if (!content) continue;
+
+    if (message.role === "user") {
+      const check = inspectInput(content);
+      if (!check.ok) {
+        return { history, blocked: { reason: check.reason, text: content } };
+      }
+      history.push({ role: "user", content });
+    } else {
+      history.push({ role: "assistant", content: content.slice(0, MAX_ASSISTANT_CHARS) });
+    }
+  }
+
+  return { history, blocked: null };
 }
 
 async function handleChat(req, res) {
+  const startedAt = Date.now();
+  const requestId = crypto.randomUUID();
+  const ip = req.socket.remoteAddress || "unknown";
+  const clientHash = hashClient(ip);
+
+  // 先限流，再读请求体，避免被刷接口。
+  const rate = checkRateLimit(ip);
+  if (rate.limited) {
+    auditLog({
+      requestId,
+      clientHash,
+      status: 429,
+      event: "rate_limited",
+      retryAfter: rate.retryAfter,
+    });
+    sendJson(
+      res,
+      429,
+      { error: "问得有点快，请稍后再试。", retryAfter: rate.retryAfter },
+      rateLimitHeaders(rate)
+    );
+    return;
+  }
+
   if (!API_KEY) {
+    auditLog({ requestId, clientHash, status: 503, event: "missing_api_key" });
     sendError(
       res,
       503,
@@ -166,32 +352,55 @@ async function handleChat(req, res) {
     return;
   }
 
-  const ip = req.socket.remoteAddress || "unknown";
-  if (isRateLimited(ip)) {
-    sendError(res, 429, "问得有点快，请稍等一会儿再试。");
-    return;
-  }
-
   let body;
   try {
     body = await readJsonBody(req);
   } catch (error) {
-    if (error.message === "BODY_TOO_LARGE") {
-      sendError(res, 413, "消息太长了，请缩短后再试。");
-    } else {
-      sendError(res, 400, "请求格式不正确。");
-    }
+    const status = error.message === "BODY_TOO_LARGE" ? 413 : 400;
+    auditLog({
+      requestId,
+      clientHash,
+      status,
+      event: error.message === "BODY_TOO_LARGE" ? "body_too_large" : "invalid_json",
+    });
+    sendError(
+      res,
+      status,
+      status === 413 ? "消息太长了，请缩短后再试。" : "请求格式不正确。"
+    );
     return;
   }
 
-  const history = normalizeHistory(body.messages);
+  const normalized = normalizeHistory(body.messages);
+  if (normalized.blocked) {
+    auditLog({
+      requestId,
+      clientHash,
+      status: 400,
+      event: "input_blocked",
+      reason: normalized.blocked.reason,
+      input: safeLogText(normalized.blocked.text, 500),
+    });
+    sendError(
+      res,
+      400,
+      normalized.blocked.reason === "TOO_LONG"
+        ? "消息太长了，请控制在 500 字以内。"
+        : "这个问题包含不允许的指令，请换个问法。"
+    );
+    return;
+  }
+
+  const history = normalized.history;
   const lastMessage = history[history.length - 1];
 
   if (!lastMessage || lastMessage.role !== "user") {
+    auditLog({ requestId, clientHash, status: 400, event: "missing_user_message" });
     sendError(res, 400, "缺少用户消息。");
     return;
   }
 
+  const userInput = lastMessage.content;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -215,34 +424,81 @@ async function handleChat(req, res) {
     const data = await response.json().catch(() => null);
 
     if (!response.ok) {
-      console.error("[DeepSeek] HTTP", response.status, data);
-      if (response.status === 401) {
+      const providerStatus = response.status;
+      auditLog({
+        requestId,
+        clientHash,
+        status: 502,
+        event: "provider_error",
+        providerStatus,
+        input: safeLogText(userInput, 500),
+        latencyMs: Date.now() - startedAt,
+        model: MODEL,
+      });
+
+      if (providerStatus === 401) {
         sendError(res, 502, "DeepSeek API Key 无效，请检查 .env 中的 DEEPSEEK_API_KEY。");
-      } else if (response.status === 402) {
+      } else if (providerStatus === 402) {
         sendError(res, 502, "DeepSeek 账户余额不足，请检查账户。");
-      } else if (response.status === 429) {
+      } else if (providerStatus === 429) {
         sendError(res, 502, "DeepSeek 接口调用过于频繁，请稍后再试。");
       } else {
-        sendError(res, 502, `模型服务返回错误（${response.status}）。`);
+        sendError(res, 502, `模型服务返回错误（${providerStatus}）。`);
       }
       return;
     }
 
-    const reply = data && data.choices && data.choices[0] && data.choices[0].message
-      ? data.choices[0].message.content
-      : "";
+    const rawReply =
+      data && data.choices && data.choices[0] && data.choices[0].message
+        ? data.choices[0].message.content
+        : "";
 
-    if (typeof reply !== "string" || !reply.trim()) {
+    if (typeof rawReply !== "string" || !rawReply.trim()) {
+      auditLog({
+        requestId,
+        clientHash,
+        status: 502,
+        event: "empty_model_reply",
+        input: safeLogText(userInput, 500),
+        latencyMs: Date.now() - startedAt,
+        model: MODEL,
+      });
       sendError(res, 502, "模型没有返回内容，请再试一次。");
       return;
     }
 
-    sendJson(res, 200, { reply: reply.trim() });
+    const filtered = filterOutput(rawReply);
+    auditLog({
+      requestId,
+      clientHash,
+      status: 200,
+      event: "completed",
+      input: safeLogText(userInput, 500),
+      output: safeLogText(filtered.text, 1000),
+      inputLength: userInput.length,
+      outputRedacted: filtered.redacted,
+      outputBlocked: filtered.blocked,
+      latencyMs: Date.now() - startedAt,
+      model: MODEL,
+    });
+
+    sendJson(res, 200, { reply: filtered.text });
   } catch (error) {
-    if (error.name === "AbortError") {
+    const aborted = error && error.name === "AbortError";
+    auditLog({
+      requestId,
+      clientHash,
+      status: aborted ? 504 : 502,
+      event: aborted ? "provider_timeout" : "request_failed",
+      errorName: error && error.name ? error.name : "Error",
+      input: safeLogText(userInput, 500),
+      latencyMs: Date.now() - startedAt,
+      model: MODEL,
+    });
+
+    if (aborted) {
       sendError(res, 504, "模型响应超时，请重试。");
     } else {
-      console.error("[DeepSeek] 请求失败：", error);
       sendError(res, 502, "连接模型服务失败，请检查网络后重试。");
     }
   } finally {
@@ -270,6 +526,8 @@ function resolveStaticPath(requestPath) {
 
   // 禁止访问隐藏文件、.env、.git 等
   if (segments.some((segment) => segment.startsWith("."))) return null;
+
+  if (SERVER_ONLY_DIRS.has(segments[0])) return null;
 
   const baseName = segments[segments.length - 1];
   if (SERVER_ONLY_FILES.has(baseName)) return null;
