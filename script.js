@@ -543,7 +543,7 @@ function setupCopyButton(button, target, originalLabel) {
 }
 
 setupCopyButton(copyEmailButton, contactEmail, "复制邮箱");
-setupCopyButton(copyWechatButton, contactWechat, "复制微信号");
+setupCopyButton(copyWechatButton, contactWechat, "复制电话/微信");
 
 /* ---------- Mobile menu ---------- */
 
@@ -595,6 +595,40 @@ function updateHeader() {
 if (header) {
   updateHeader();
   window.addEventListener("scroll", updateHeader, { passive: true });
+}
+
+/* ---------- Active navigation ---------- */
+
+const navLinks = Array.from(document.querySelectorAll(".site-nav a[href^='#']"));
+const navSections = navLinks
+  .map((link) => document.querySelector(link.getAttribute("href")))
+  .filter(Boolean);
+
+function updateActiveNav() {
+  let currentId = "";
+
+  for (const section of navSections) {
+    const rect = section.getBoundingClientRect();
+    if (rect.top <= 150 && rect.bottom > 150) {
+      currentId = section.id;
+      break;
+    }
+  }
+
+  navLinks.forEach((link) => {
+    const isActive = link.getAttribute("href") === `#${currentId}`;
+    link.classList.toggle("is-active", isActive);
+    if (isActive) {
+      link.setAttribute("aria-current", "location");
+    } else {
+      link.removeAttribute("aria-current");
+    }
+  });
+}
+
+if (navLinks.length && navSections.length) {
+  updateActiveNav();
+  window.addEventListener("scroll", updateActiveNav, { passive: true });
 }
 
 /* ---------- Current year ---------- */

@@ -2,6 +2,7 @@
 tools/
 .env
 .chrome-*/
+.edgeone-*/
 preview-*.png
 *.zip
 *.log
