@@ -1,5 +1,6 @@
 # 本地预览与部署辅助文件，不进入仓库
 tools/
+node_modules/
 .env
 .chrome-*/
 .edgeone-*/

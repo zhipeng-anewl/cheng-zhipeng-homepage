@@ -1,0 +1,106 @@
+@import "tailwindcss";
+@import "@heroui/styles";
+
+:root {
+  --navy: #08182e;
+  --ink: #0b1f3a;
+  --blue: #1f66e5;
+  --muted: #5d6f87;
+  --line: #dfe7f2;
+  --font-sans: "Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono: "SFMono-Regular", "Cascadia Mono", Consolas, "Liberation Mono",
+    monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 96px;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  color: var(--ink);
+  background:
+    radial-gradient(900px 560px at 92% -4%, rgba(31, 102, 229, 0.14), transparent 65%),
+    radial-gradient(760px 520px at 2% 18%, rgba(77, 163, 255, 0.08), transparent 62%),
+    #f7faff;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  color: var(--navy);
+  background: rgba(31, 102, 229, 0.2);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.tech-grid {
+  background-image:
+    linear-gradient(rgba(31, 102, 229, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(31, 102, 229, 0.055) 1px, transparent 1px);
+  background-size: 32px 32px;
+  -webkit-mask-image: linear-gradient(145deg, #000 26%, transparent 82%);
+  mask-image: linear-gradient(145deg, #000 26%, transparent 82%);
+}
+
+.tech-grid-dark {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+  -webkit-mask-image: linear-gradient(110deg, transparent 36%, #000 100%);
+  mask-image: linear-gradient(110deg, transparent 36%, #000 100%);
+}
+
+.chat-scroll {
+  scrollbar-color: #cdd9e8 transparent;
+  scrollbar-width: thin;
+}
+
+.chat-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.chat-scroll::-webkit-scrollbar-thumb {
+  background: #cdd9e8;
+  border-radius: 999px;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-fade {
+  animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hero-fade-delay {
+  animation: fade-up 0.85s 0.12s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

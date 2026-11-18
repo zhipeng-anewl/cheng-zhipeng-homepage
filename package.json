@@ -4,8 +4,22 @@
   "private": true,
   "description": "程志鹏的个人主页：静态页面 + 本地 Node 后端 + DeepSeek 数字分身",
   "scripts": {
-    "build": "node scripts/build.mjs",
-    "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "vite",
+    "dev:api": "node --watch server.js",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "npm run build && node server.js"
+  },
+  "dependencies": {
+    "@heroui/react": "^3.2.7",
+    "@heroui/styles": "^3.2.7",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
+    "@vitejs/plugin-react": "^6.3.0",
+    "tailwindcss": "^4.3.5",
+    "vite": "^8.3.8"
   }
 }

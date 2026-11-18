@@ -23,6 +23,10 @@ const crypto = require("node:crypto");
 const { SYSTEM_PROMPT, PROFILE } = require("./knowledge");
 
 const ROOT = __dirname;
+// 生产/本地预览优先使用 Vite 构建产物；没有 dist 时退回静态文件目录。
+const STATIC_ROOT = fs.existsSync(path.join(ROOT, "dist", "index.html"))
+  ? path.join(ROOT, "dist")
+  : ROOT;
 
 /* ---------- 读取 .env（无第三方依赖） ---------- */
 
@@ -532,8 +536,8 @@ function resolveStaticPath(requestPath) {
   const baseName = segments[segments.length - 1];
   if (SERVER_ONLY_FILES.has(baseName)) return null;
 
-  const filePath = path.join(ROOT, ...segments);
-  const relative = path.relative(ROOT, filePath);
+  const filePath = path.join(STATIC_ROOT, ...segments);
+  const relative = path.relative(STATIC_ROOT, filePath);
 
   if (relative.startsWith("..") || path.isAbsolute(relative)) return null;
 
