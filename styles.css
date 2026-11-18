@@ -982,6 +982,132 @@ button {
   padding-top: 20px;
 }
 
+/* ---------- Projects ---------- */
+
+.project-grid {
+  align-items: stretch;
+}
+
+.project-card {
+  min-height: 430px;
+}
+
+.project-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+  color: var(--muted-2);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+}
+
+.project-card h3 {
+  margin: 17px 0 12px;
+  font-size: 21px;
+  line-height: 1.45;
+}
+
+.project-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.project-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  color: var(--blue);
+  background: #eff5ff;
+  border: 1px solid #dce8fc;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 500;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.project-link:hover {
+  color: var(--white);
+  background: var(--blue);
+  border-color: var(--blue);
+}
+
+.status-pill-warn {
+  color: #9a6700;
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+/* ---------- Research ---------- */
+
+.research-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.research-item {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 250px;
+  gap: 22px;
+  align-items: start;
+  padding: 24px 26px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(223, 231, 242, 0.95);
+  border-radius: 18px;
+  transition: background 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease;
+}
+
+.research-item:hover {
+  background: var(--white);
+  border-color: #cbd9ed;
+  box-shadow: var(--shadow-soft);
+}
+
+.research-index {
+  padding-top: 3px;
+  color: #a6b4c6;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+}
+
+.research-body h3 {
+  margin: 0 0 7px;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 1.45;
+  letter-spacing: -0.02em;
+}
+
+.research-body p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.8;
+}
+
+.research-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  color: var(--muted-2);
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: right;
+}
+
+.research-meta .status-pill {
+  align-self: flex-end;
+}
+
 /* ---------- Chat ---------- */
 
 .chat-section {
@@ -1469,12 +1595,29 @@ button {
   margin-bottom: 18px;
 }
 
-.contact-copy > p:last-child {
+.contact-copy > p:not(.section-kicker) {
   max-width: 480px;
   margin: 0;
   color: rgba(255, 255, 255, 0.6);
   font-size: 14px;
   line-height: 1.85;
+}
+
+.contact-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 20px;
+}
+
+.contact-tags span {
+  padding: 5px 10px;
+  color: #cfe2ff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  font-size: 10.5px;
+  line-height: 1.4;
 }
 
 .contact-card {
@@ -1750,6 +1893,27 @@ button {
     margin-top: 32px;
   }
 
+  .research-item {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .research-index {
+    display: none;
+  }
+
+  .research-meta {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+  }
+
+  .research-meta .status-pill {
+    align-self: center;
+  }
+
   .chat-layout {
     grid-template-columns: minmax(0, 1fr);
     gap: 34px;
@@ -1959,6 +2123,27 @@ button {
   .direction-card h3 {
     margin-top: 27px;
     font-size: 20px;
+  }
+
+  .project-meta {
+    margin-top: 20px;
+  }
+
+  .research-item {
+    padding: 20px;
+    border-radius: 16px;
+  }
+
+  .research-body h3 {
+    font-size: 16.5px;
+  }
+
+  .research-body p {
+    font-size: 13px;
+  }
+
+  .contact-tags {
+    margin-top: 16px;
   }
 
   .chat-section {

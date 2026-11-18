@@ -1,10 +1,10 @@
 # 程志鹏 · 个人主页
 
-一个单页个人主页，包含头像、自我介绍、作品方向和联系方式，以及一个由 DeepSeek 驱动的数字分身聊天区。
+一个单页个人主页，包含头像、自我介绍、教育背景、项目经历、科研经历和联系方式，以及一个由 DeepSeek 驱动的数字分身聊天区。
 
 项目分为两部分：
 
-- **前端**：`index.html` + `styles.css` + `script.js`，纯静态，没有构建步骤
+- **前端**：`index.html` + `styles.css` + `script.js`，纯静态；`npm run build` 会把静态文件复制到 `dist`
 - **后端**：`server.js`，零依赖 Node 服务，负责托管静态文件并把聊天请求转发给 DeepSeek
 
 ## 启动方式
@@ -100,10 +100,10 @@
 ## 修改指南
 
 1. **页面文案**：直接改 `index.html`
-2. **数字分身知识**：改 `knowledge.js` 的 `KNOWLEDGE` 字符串
+2. **数字分身知识**：改 `knowledge.js` 的 `KNOWLEDGE` 字符串；同时同步 `functions/api/chat.js` 里的提示词，EdgeOne 才会使用新资料
 3. **分身回答语气/边界**：改 `knowledge.js` 的 `SYSTEM_PROMPT`
 4. **联系方式**：同步修改 `index.html` 的 `#contact`、`script.js` 的 `PROFILE`、`knowledge.js` 的 `PROFILE`
-5. **作品方向**：有具体案例后，把 `#directions` 中的卡片替换成真实作品链接
+5. **项目/科研内容**：项目在 `#projects`，论文与专利在 `#research`；有新的公开链接时直接替换卡片中的链接。
 
 ## 注意事项
 
